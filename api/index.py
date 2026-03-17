@@ -2,9 +2,13 @@ from fastapi import FastAPI, UploadFile, File
 import json
 
 app = FastAPI()
+
+# Add this! It helps you verify the API is actually "awake"
 @app.get("/api")
-def read_root():
-    return {"status": "This API is Live"}
+async def health_check():
+    return {"status": "TerraMatch Sanitizer is Online"}
+
+# Your existing sanitize code follows...
 
 def clean_coordinates(coords):
     if isinstance(coords, (list, tuple)):

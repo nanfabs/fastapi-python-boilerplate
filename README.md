@@ -1,28 +1,42 @@
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fexamples%2Ftree%2Fmain%2Fpython%2Ffastapi&demo-title=FastAPI&demo-description=Use%20FastAPI%20on%20Vercel%20with%20Serverless%20Functions%20using%20the%20Python%20Runtime.&demo-url=https%3A%2F%2Fvercel-plus-fastapi.vercel.app%2F&demo-image=https://assets.vercel.com/image/upload/v1669994600/random/python.png)
+# GeoJSON Sanitizer
 
-# FastAPI + Vercel
+A small Vercel-ready app for sanitizing user-uploaded GeoJSON files before they reach TM.
 
-This example shows how to use FastAPI on Vercel with Serverless Functions using the [Python Runtime](https://vercel.com/docs/concepts/functions/serverless-functions/runtimes/python).
+## What it does
 
-## Demo
+- keeps only `Polygon` and `MultiPolygon`
+- strips 3D coordinates down to 2D
+- auto-closes polygon rings when needed
+- removes unsupported properties
+- auto-maps common bad property names
+- validates `practice`, `targetSys`, and `distr`
+- sets invalid field values to `null`
+- drops features with unrecoverable geometry
 
-https://vercel-plus-fastapi.vercel.app/
+## Project structure
 
-## How it Works
+- `api/sanitize.py` - FastAPI endpoint for upload + sanitization
+- `lib/sanitizer.py` - sanitizer logic
+- `lib/aliases.py` - allowed fields, aliases, enums
+- `public/index.html` - simple upload UI
 
-This example uses the Asynchronous Server Gateway Interface (ASGI) with FastAPI to enable handling requests on Vercel with Serverless Functions.
-
-## Running Locally
+## Run locally
 
 ```bash
-npm i -g vercel
-vercel dev
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt uvicorn
+uvicorn api.sanitize:app --reload
 ```
 
-Your FastAPI application is now available at `http://localhost:3000`.
+Then open `http://127.0.0.1:8000/public/index.html`.
 
-## One-Click Deploy
+## Deploy on Vercel
 
-Deploy the example using [Vercel](https://vercel.com?utm_source=github&utm_medium=readme&utm_campaign=vercel-examples):
+1. Push this folder to GitHub.
+2. Import the repo into Vercel.
+3. Vercel will install `requirements.txt` and expose the FastAPI route under `/api/sanitize`.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fexamples%2Ftree%2Fmain%2Fpython%2Ffastapi&demo-title=FastAPI&demo-description=Use%20FastAPI%20on%20Vercel%20with%20Serverless%20Functions%20using%20the%20Python%20Runtime.&demo-url=https%3A%2F%2Fvercel-plus-fastapi.vercel.app%2F&demo-image=https://assets.vercel.com/image/upload/v1669994600/random/python.png)
+## Notes
+
+The current implementation treats all known fields as optional and initializes missing fields to `null` in the output.

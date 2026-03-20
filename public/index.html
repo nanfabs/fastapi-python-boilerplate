@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GeoJSON Sanitizer</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: Inter, system-ui, sans-serif;
+      }
+      body {
+        margin: 0;
+        padding: 32px;
+        line-height: 1.5;
+      }
+      .wrap {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+      .card {
+        border: 1px solid #8884;
+        border-radius: 16px;
+        padding: 20px;
+        margin-top: 20px;
+      }
+      button {
+        padding: 10px 16px;
+        border-radius: 10px;
+        border: 1px solid #8884;
+        cursor: pointer;
+      }
+      input[type="file"] {
+        display: block;
+        margin: 12px 0 16px;
+      }
+      pre {
+        white-space: pre-wrap;
+        word-break: break-word;
+        background: #8882;
+        border-radius: 12px;
+        padding: 16px;
+        overflow: auto;
+      }
+      .muted {
+        opacity: 0.8;
+      }
+      .error {
+        color: #c62828;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>GeoJSON Sanitizer</h1>
+      <p class="muted">
+        Upload a GeoJSON file to remove unsupported properties, strip 3D coordinates,
+        normalize known fields, auto-close polygon rings, and drop invalid features.
+      </p>
+
+      <div class="card">
+        <label for="fileInput"><strong>Select a .geojson or .json file</strong></label>
+        <input id="fileInput" type="file" accept=".geojson,.json,application/geo+json,application/json" />
+        <button id="sanitizeBtn">Sanitize file</button>
+        <p id="status" class="muted"></p>
+        <p id="error" class="error hidden"></p>
+      </div>
+
+      <div id="results" class="card hidden">
+        <h2>Summary</h2>
+        <pre id="summary"></pre>
+        <button id="downloadBtn">Download sanitized GeoJSON</button>
+
+        <h2>Fix report</h2>
+        <pre id="report"></pre>
+      </div>
+    </div>
+
+    <script>
+      const fileInput = document.getElementById('fileInput');
+      const sanitizeBtn = document.getElementById('sanitizeBtn');
+      const downloadBtn = document.getElementById('downloadBtn');
+      const statusEl = document.getElementById('status');
+      const errorEl = document.getElementById('error');
+      const resultsEl = document.getElementById('results');
+      const summaryEl = document.getElementById('summary');
+      const reportEl = document.getElementById('report');
+
+      let latestSanitized = null;
+      let latestFilename = 'sanitized.geojson';
+
+      function setError(message) {
+        if (!message) {
+          errorEl.classList.add('hidden');
+          errorEl.textContent = '';
+          return;
+        }
+        errorEl.textContent = message;
+        errorEl.classList.remove('hidden');
+      }
+
+      sanitizeBtn.addEventListener('click', async () => {
+        setError('');
+        resultsEl.classList.add('hidden');
+
+        const file = fileInput.files?.[0];
+        if (!file) {
+          setError('Choose a file first.');
+          return;
+        }
+
+        latestFilename = file.name.replace(/(\.geojson|\.json)$/i, '') + '.sanitized.geojson';
+        statusEl.textContent = 'Sanitizing…';
+
+        const form = new FormData();
+        form.append('file', file);
+
+        try {
+          const response = await fetch('/api/sanitize', {
+            method: 'POST',
+            body: form,
+          });
+
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.detail || 'Sanitization failed.');
+          }
+
+          latestSanitized = data.sanitized;
+          summaryEl.textContent = JSON.stringify(data.report.summary, null, 2);
+          reportEl.textContent = JSON.stringify(data.report, null, 2);
+          resultsEl.classList.remove('hidden');
+          statusEl.textContent = 'Done.';
+        } catch (error) {
+          statusEl.textContent = '';
+          setError(error.message || 'Sanitization failed.');
+        }
+      });
+
+      downloadBtn.addEventListener('click', () => {
+        if (!latestSanitized) return;
+        const blob = new Blob([JSON.stringify(latestSanitized, null, 2)], { type: 'application/geo+json' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = latestFilename;
+        anchor.click();
+        URL.revokeObjectURL(url);
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,15 @@
+ALIASES = {
+    "polyname": "polyName",
+    "poly_name": "polyName",
+    "plantstart": "plantStart",
+    "plant_start": "plantStart",
+    "practice": "practice",
+    "targetsys": "targetSys",
+    "target_sys": "targetSys",
+    "distr": "distr",
+    "numtrees": "numTrees",
+    "num_trees": "numTrees",
+    "siteid": "siteId",
+    "site_id": "siteId",
+    "siteID": "siteId",
+}
